@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"./internal/router"
+	"github.com/yksz/drift/internal"
 )
 
 var port string
@@ -16,7 +16,6 @@ func init() {
 }
 
 func main() {
-	r := router.NewRouter()
 	log.Printf("Listening and serving HTTP on %s\n", port)
-	http.ListenAndServe(":"+port, r)
+	http.ListenAndServe(":"+port, internal.Router())
 }
