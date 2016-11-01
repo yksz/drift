@@ -6,24 +6,27 @@ import (
 
 	"goji.io"
 	"goji.io/pat"
-	"golang.org/x/net/context"
 )
 
 func Router() http.Handler {
 	mux := goji.NewMux()
-	mux.HandleFuncC(pat.Get("/"), index)
-	mux.Handle(pat.Get("/list/*"), http.StripPrefix("/list", NewFileServer(Conf.RootDir)))
+	mux.HandleFunc(pat.Get("/"), index)
+	mux.Handle(pat.Get("/static/*"), http.StripPrefix("/static/", http.FileServer(http.Dir("public/static"))))
+
+	mux.Handle(pat.Get("/list"), RedirectHandler("/list/"))
+	mux.HandleFunc(pat.Get("/list/*"), serveFileFunc("public/views/list.html"))
+
+	mux.Handle(pat.Get("/api/file"), FileHandler(Conf.RootDir))
+	mux.Handle(pat.Get("/api/file/"), RedirectHandler("/api/file"))
 	return mux
 }
 
-func index(c context.Context, w http.ResponseWriter, r *http.Request) {
+func index(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "index page")
 }
 
-func RedirectLocal(newPath string, w http.ResponseWriter, r *http.Request) {
-	if q := r.URL.RawQuery; q != "" {
-		newPath += "?" + q
+func serveFileFunc(filepath string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, filepath)
 	}
-	w.Header().Set("Location", newPath)
-	w.WriteHeader(http.StatusMovedPermanently)
 }

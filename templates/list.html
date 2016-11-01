@@ -1,6 +1,0 @@
-<!DOCTYPE html>
-{{ range . }}
-{{ if not .IsHidden }}
-<a href="{{ .Name | html }}">{{ .Name }}{{ if .IsDir }}/{{ end }}</a><br>
-{{ end }}
-{{ end }}
