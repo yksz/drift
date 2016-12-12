@@ -1,3 +1,6 @@
+const LIST_PATH_PREFIX = '/list';
+const OPEN_PATH_PREFIX = '/open';
+
 new Vue({
   el: '#list',
 
@@ -12,17 +15,20 @@ new Vue({
   methods: {
     fetch: function() {
       let path = location.pathname;
-      if (path.startsWith('/list')) {
-        path = path.substring('/list'.length);
-      }
+      path = path.substring(LIST_PATH_PREFIX.length);
       let self = this;
-      const apiURL = '/api/file?path=' + path;
-      $.getJSON(apiURL).done(function(json) {
-        json.forEach(function(file) {
-          file.path = 'list/' + file.path;
+      let apiURL = '/api/list?path=' + path;
+      $.getJSON(apiURL).done(json => {
+        json = json.filter(file => !file.is_hidden);
+        json.forEach(file => {
+          if (file.is_dir) {
+            file.path = LIST_PATH_PREFIX + '/' + file.path;
+          } else {
+            file.path = OPEN_PATH_PREFIX + '/' + file.path;
+          }
         });
         self.filelist = json;
       });
     }
   }
-})
+});

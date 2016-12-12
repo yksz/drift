@@ -1,8 +1,7 @@
-package internal
+package webapi
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"os"
 	"path"
@@ -17,36 +16,33 @@ type FileAttribute struct {
 	IsHidden bool   `json:"is_hidden"`
 }
 
-func FileHandler(root string) http.Handler {
-	return &fileHandler{root: filepath.Clean(root)}
+func ListAPI(root string) http.Handler {
+	return &listAPI{root: filepath.Clean(root)}
 }
 
-type fileHandler struct {
+type listAPI struct {
 	root string
 }
 
-func (h *fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (a *listAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
-	filepath := path.Clean(h.root + query.Get("path"))
-	if err := h.serveFile(filepath, w, r); err != nil {
+	filename := path.Clean(a.root + query.Get("path"))
+	if err := a.serve(filename, w, r); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-func (h *fileHandler) serveFile(filepath string, w http.ResponseWriter, r *http.Request) error {
-	file, err := os.Stat(filepath)
+func (a *listAPI) serve(filename string, w http.ResponseWriter, r *http.Request) error {
+	file, err := os.Stat(filename)
 	if err != nil {
 		return err
 	}
-
-	if file.IsDir() {
-		return h.listFiles(filepath, w, r)
+	if !file.IsDir() {
+		return nil
 	}
-	return h.serveContent(filepath, w, r)
-}
+	dirname := filename
 
-func (h *fileHandler) listFiles(dirpath string, w http.ResponseWriter, r *http.Request) error {
-	dir, err := os.Open(dirpath)
+	dir, err := os.Open(dirname)
 	if err != nil {
 		return err
 	}
@@ -58,7 +54,7 @@ func (h *fileHandler) listFiles(dirpath string, w http.ResponseWriter, r *http.R
 	}
 	sort.Sort(byName(files))
 
-	rel, err := filepath.Rel(h.root, dirpath)
+	rel, err := filepath.Rel(a.root, dirname)
 	if err != nil {
 		return err
 	}
@@ -86,13 +82,8 @@ func isHidden(fi os.FileInfo) bool {
 	return fi.Name()[0] == '.'
 }
 
-func (h *fileHandler) serveContent(filepath string, w http.ResponseWriter, r *http.Request) error {
-	fmt.Fprintf(w, "FILE: %s\n", filepath)
-	return nil
-}
-
 type byName []os.FileInfo
 
-func (s byName) Len() int           { return len(s) }
-func (s byName) Less(i, j int) bool { return s[i].Name() < s[j].Name() }
-func (s byName) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (n byName) Len() int           { return len(n) }
+func (n byName) Less(i, j int) bool { return n[i].Name() < n[j].Name() }
+func (n byName) Swap(i, j int)      { n[i], n[j] = n[j], n[i] }
