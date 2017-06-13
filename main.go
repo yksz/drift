@@ -17,5 +17,5 @@ func init() {
 
 func main() {
 	log.Printf("Listening and serving HTTP on %s\n", port)
-	http.ListenAndServe(":"+port, internal.Router())
+	log.Fatal(http.ListenAndServe(":"+port, internal.Router()))
 }
